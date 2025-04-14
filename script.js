@@ -407,4 +407,43 @@ document.addEventListener('DOMContentLoaded', function() {
             renderTicketList(); // Pour afficher le message vide
         }
     }
+    // Select the new button
+const downloadCsvButton = document.getElementById('download-csv');
+
+// Add an event listener to the button
+downloadCsvButton.addEventListener('click', function () {
+    if (tickets.length === 0) {
+        alert('Aucun ticket à télécharger.');
+        return;
+    }
+
+    // Generate CSV content
+    const csvContent = generateCsv(tickets);
+
+    // Create a Blob and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const filename = `tickets_${new Date().toISOString().split('T')[0]}.csv`;
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+});
+
+// Function to generate CSV content
+function generateCsv(data) {
+    const headers = ['Nom du ticket', 'Valeur unitaire (€)', 'Quantité', 'Date', 'Valeur totale (€)'];
+    const rows = data.map(ticket => [
+        ticket.name,
+        ticket.value.toFixed(2),
+        ticket.quantity,
+        formatDate(ticket.date),
+        (ticket.value * ticket.quantity).toFixed(2)
+    ]);
+
+    // Combine headers and rows
+    const csvRows = [headers, ...rows];
+    return csvRows.map(row => row.join(',')).join('\n');
+}
 }); 
