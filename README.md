@@ -36,3 +36,4 @@ Quelques choix :
 - **Montants** : regroupements faits en centimes entiers pour éviter les erreurs d'arrondi des nombres flottants.
 - **Dates** manipulées en heure locale (et non en UTC) pour éviter les décalages d'un jour.
 - Les données sont stockées dans le `localStorage` ; celles de l'ancienne version sont reprises automatiquement.
+d
