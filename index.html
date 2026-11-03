@@ -3,73 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestionnaire de Tickets Restaurant</title>
+    <meta name="description" content="Inventaire des titres-restaurant : saisie des lots, dates de validité, synthèse par période, journal des opérations et export CSV.">
+    <meta name="theme-color" content="#2563eb">
+    <title>Mes Tickets Resto</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎫</text></svg>">
+    <script>
+        // Appliqué avant le rendu pour éviter un flash du mauvais thème
+        (function () {
+            var theme = localStorage.getItem('theme') ||
+                (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.dataset.theme = theme;
+            var accent = localStorage.getItem('accent');
+            if (accent) document.documentElement.style.setProperty('--accent', accent);
+        })();
+    </script>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
 <body>
-    <div class="container">
-        <header class="animate__animated animate__fadeIn">
-            <h1>Gestionnaire de Tickets Restaurant</h1>
-            <div class="theme-selector">
-                <label for="background-color">Couleur:</label>
-                <input type="color" id="background-color" value="#f5f5f5">
-                <button id="reset-color">Réinitialiser</button>
-            </div>
-        </header>
-        
-        <main>
-            <div class="controls animate__animated animate__fadeInUp">
-                <h2>Ajouter un nouveau ticket</h2>
-                <div class="form-group">
-                    <input type="text" id="ticket-issuer" placeholder="Nom du ticket">
-                    <input type="number" id="ticket-value" placeholder="Valeur du ticket" min="0" step="0.01">
-                    <input type="number" id="ticket-quantity" placeholder="Quantité" min="0">
-                    <input type="date" id="ticket-date" placeholder="Date">
-                    <button id="add-ticket">Ajouter</button>
-                </div>
-            </div>
+    <!-- Sprite d'icônes, réutilisé via <use href="#i-..."> -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4Z"/><path d="M14 5v2M14 11v2M14 17v2"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></symbol>
+        <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+        <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+        <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></symbol>
+        <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-3"/><path d="M21 9h-5a3 3 0 0 0 0 6h5Z"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+        <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2Z"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+        <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+        <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6Z"/></symbol>
+        <symbol id="i-check"viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17h.01"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    </svg>
 
-            <div class="ticket-table-container animate__animated animate__fadeInUp">
-                <h2>Mes tickets</h2>
-                <table id="ticket-table">
-                    <thead>
-                        <tr>
-                            <th>Nom du ticket</th>
-                            <th>Valeur unitaire (€)</th>
-                            <th>Quantité</th>
-                            <th>Date</th>
-                            <th>Valeur totale (€)</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ticket-list">
-                        
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="4">Total</td>
-                            <td id="total-value">0.00 €</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-            
-            <div id="details-container" class="hidden animate__animated animate__fadeIn">
-                <h2>Détails des tickets <span id="details-title"></span></h2>
-                <div id="details-content">
-                    
+    <a class="skip-link" href="#main">Aller au contenu</a>
+
+    <header class="app-header">
+        <div class="container header-inner">
+            <div class="brand">
+                <span class="brand-logo" aria-hidden="true"><svg class="icon"><use href="#i-ticket"/></svg></span>
+                <div>
+                    <h1>Mes Tickets Resto</h1>
+                    <p class="brand-sub">Inventaire des titres-restaurant</p>
                 </div>
-                <button id="close-details">Fermer</button>
             </div>
-            
-            <button id="reset-data" class="animate__animated animate__fadeIn">Réinitialiser toutes les données</button>
-            
-             <button id="download-csv" class="animate__animated animate__fadeIn">Télécharger en CSV</button>
-        </main>
-    </div>
+            <div class="header-actions">
+                <div class="accent-picker" id="accent-picker" role="radiogroup" aria-label="Couleur d'accent"></div>
+                <button type="button" id="theme-toggle" class="icon-btn" aria-label="Activer le thème sombre">
+                    <svg class="icon icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+                    <svg class="icon icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="main" class="container">
+        <section class="stats" aria-label="Résumé">
+            <article class="stat stat-primary">
+                <div class="stat-icon"><svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg></div>
+                <div>
+                    <p class="stat-label">Solde utilisable</p>
+                    <p class="stat-value" id="stat-balance">0,00 €</p>
+                    <p class="stat-sub" id="stat-balance-sub">&nbsp;</p>
+                </div>
+            </article>
+            <article class="stat">
+                <div class="stat-icon"><svg class="icon" aria-hidden="true"><use href="#i-ticket"/></svg></div>
+                <div>
+                    <p class="stat-label">Tickets</p>
+                    <p class="stat-value" id="stat-count">0</p>
+                    <p class="stat-sub" id="stat-count-sub">&nbsp;</p>
+                </div>
+            </article>
+            <article class="stat" id="stat-expiring-card">
+                <div class="stat-icon"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg></div>
+                <div>
+                    <p class="stat-label">À utiliser vite</p>
+                    <p class="stat-value" id="stat-expiring">0,00 €</p>
+                    <p class="stat-sub" id="stat-expiring-sub">&nbsp;</p>
+                </div>
+            </article>
+            <article class="stat">
+                <div class="stat-icon"><svg class="icon" aria-hidden="true"><use href="#i-receipt"/></svg></div>
+                <div>
+                    <p class="stat-label">Émetteurs</p>
+                    <p class="stat-value" id="stat-issuers">0</p>
+                    <p class="stat-sub" id="stat-issuers-sub">&nbsp;</p>
+                </div>
+            </article>
+        </section>
+
+        <div class="grid-2">
+            <section class="card" aria-labelledby="add-title">
+                <h2 id="add-title">Ajouter des tickets</h2>
+                <form id="ticket-form" class="ticket-form" novalidate>
+                    <div class="field field-full">
+                        <label for="ticket-name">Nom / émetteur</label>
+                        <input type="text" id="ticket-name" name="name" list="name-suggestions" autocomplete="off" placeholder="ex. Carte Swile, Chèque Déjeuner…" aria-describedby="ticket-name-error">
+                        <p class="field-error" id="ticket-name-error"></p>
+                    </div>
+                    <div class="field">
+                        <label for="ticket-value">Valeur unitaire (€)</label>
+                        <input type="number" id="ticket-value" name="value" min="0.01" step="0.01" inputmode="decimal" placeholder="9,00" aria-describedby="ticket-value-error">
+                        <div class="chips" id="quick-values" aria-label="Valeurs fréquentes"></div>
+                        <p class="field-error" id="ticket-value-error"></p>
+                    </div>
+                    <div class="field">
+                        <label for="ticket-quantity">Quantité</label>
+                        <div class="stepper">
+                            <button type="button" class="stepper-btn" data-step="-1" aria-label="Diminuer la quantité"><svg class="icon" aria-hidden="true"><use href="#i-minus"/></svg></button>
+                            <input type="number" id="ticket-quantity" name="quantity" min="1" step="1" inputmode="numeric" value="1" aria-describedby="ticket-quantity-error">
+                            <button type="button" class="stepper-btn" data-step="1" aria-label="Augmenter la quantité"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+                        </div>
+                        <p class="field-error" id="ticket-quantity-error"></p>
+                    </div>
+                    <div class="field field-full">
+                        <label for="ticket-date">Date d'émission</label>
+                        <input type="date" id="ticket-date" name="date" aria-describedby="ticket-date-hint ticket-date-error">
+                        <p class="field-hint" id="ticket-date-hint"></p>
+                        <p class="field-error" id="ticket-date-error"></p>
+                    </div>
+                    <div class="field field-full">
+                        <label for="ticket-reference">Référence <span class="optional">(facultatif)</span></label>
+                        <input type="text" id="ticket-reference" name="reference" autocomplete="off" placeholder="n° de facture, bon de commande…" aria-describedby="ticket-reference-error">
+                        <p class="field-error" id="ticket-reference-error"></p>
+                    </div>
+                    <div class="form-footer field-full">
+                        <p class="form-preview" id="form-preview" aria-live="polite"></p>
+                        <button type="submit" class="btn btn-primary">
+                            <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+                            Ajouter
+                        </button>
+                    </div>
+                </form>
+                <datalist id="name-suggestions"></datalist>
+            </section>
+
+            <section class="card summary-card" aria-labelledby="summary-title">
+                <div class="card-header">
+                    <h2 id="summary-title">Synthèse</h2>
+                    <div class="toolbar no-print">
+                        <button type="button" id="export-summary" class="btn btn-ghost btn-sm">
+                            <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+                            CSV
+                        </button>
+                        <button type="button" id="print" class="btn btn-ghost btn-sm">
+                            <svg class="icon" aria-hidden="true"><use href="#i-printer"/></svg>
+                            Imprimer
+                        </button>
+                    </div>
+                </div>
+                <p class="card-hint">Récapitulatif par émetteur et valeur faciale, selon la date d'émission.</p>
+                <div class="period">
+                    <div class="chips no-print" id="period-presets" aria-label="Périodes prédéfinies">
+                        <button type="button" class="chip" data-period="month" aria-pressed="false">Ce mois</button>
+                        <button type="button" class="chip" data-period="last-month" aria-pressed="false">Mois dernier</button>
+                        <button type="button" class="chip" data-period="year" aria-pressed="false">Cette année</button>
+                        <button type="button" class="chip" data-period="all" aria-pressed="true">Tout</button>
+                    </div>
+                    <div class="period-range">
+                        <div class="field">
+                            <label for="period-from">Du</label>
+                            <input type="date" id="period-from">
+                        </div>
+                        <div class="field">
+                            <label for="period-to">Au</label>
+                            <input type="date" id="period-to">
+                        </div>
+                    </div>
+                </div>
+                <div id="summary" class="summary" aria-live="polite"></div>
+            </section>
+        </div>
+
+        <section class="card" aria-labelledby="list-title">
+            <div class="card-header">
+                <h2 id="list-title">Inventaire</h2>
+                <div class="toolbar">
+                    <label class="search">
+                        <span class="visually-hidden">Rechercher un ticket</span>
+                        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+                        <input type="search" id="search" placeholder="Nom, référence…  ( / )" autocomplete="off">
+                    </label>
+                    <label class="visually-hidden" for="sort">Trier par</label>
+                    <select id="sort">
+                        <option value="name">Nom (A→Z)</option>
+                        <option value="total">Montant total</option>
+                        <option value="quantity">Quantité</option>
+                        <option value="expiry">Expiration la plus proche</option>
+                        <option value="recent">Émission la plus récente</option>
+                    </select>
+                </div>
+            </div>
+            <div id="distribution" class="distribution"></div>
+            <div id="ticket-list" class="ticket-list"></div>
+        </section>
+
+        <section class="card" aria-labelledby="history-title">
+            <h2 id="history-title">Journal des opérations</h2>
+            <ul id="history-list" class="history-list"></ul>
+        </section>
+
+        <section class="data-actions" aria-label="Gestion des données">
+            <button type="button" id="export-csv" class="btn btn-ghost">
+                <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+                Exporter en CSV
+            </button>
+            <label class="btn btn-ghost" for="import-csv">
+                <svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>
+                Importer un CSV
+            </label>
+            <input type="file" id="import-csv" accept=".csv,text/csv" class="visually-hidden">
+            <button type="button" id="reset-data" class="btn btn-danger-ghost">
+                <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>
+                Tout effacer
+            </button>
+        </section>
+    </main>
+
+    <footer class="app-footer container">
+        <p>Vos données restent dans votre navigateur (localStorage) — rien n'est envoyé sur un serveur.</p>
+    </footer>
+
+    <dialog id="edit-dialog" class="dialog" aria-labelledby="edit-title">
+        <form id="edit-form" method="dialog" novalidate>
+            <h2 id="edit-title">Modifier le lot</h2>
+            <div class="field">
+                <label for="edit-name">Nom / émetteur</label>
+                <input type="text" id="edit-name" name="name" list="name-suggestions" autocomplete="off" aria-describedby="edit-name-error">
+                <p class="field-error" id="edit-name-error"></p>
+            </div>
+            <div class="dialog-row">
+                <div class="field">
+                    <label for="edit-value">Valeur unitaire (€)</label>
+                    <input type="number" id="edit-value" name="value" min="0.01" step="0.01" inputmode="decimal" aria-describedby="edit-value-error">
+                    <p class="field-error" id="edit-value-error"></p>
+                </div>
+                <div class="field">
+                    <label for="edit-quantity">Quantité</label>
+                    <input type="number" id="edit-quantity" name="quantity" min="1" step="1" inputmode="numeric" aria-describedby="edit-quantity-error">
+                    <p class="field-error" id="edit-quantity-error"></p>
+                </div>
+            </div>
+            <div class="field">
+                <label for="edit-date">Date d'émission</label>
+                <input type="date" id="edit-date" name="date" aria-describedby="edit-date-error">
+                <p class="field-error" id="edit-date-error"></p>
+            </div>
+            <div class="field">
+                <label for="edit-reference">Référence <span class="optional">(facultatif)</span></label>
+                <input type="text" id="edit-reference" name="reference" autocomplete="off" aria-describedby="edit-reference-error">
+                <p class="field-error" id="edit-reference-error"></p>
+            </div>
+            <div class="dialog-actions">
+                <button type="button" class="btn btn-ghost" data-close>Annuler</button>
+                <button type="submit" class="btn btn-primary" value="save">Enregistrer</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="confirm-dialog" class="dialog dialog-sm" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+        <form method="dialog">
+            <h2 id="confirm-title"></h2>
+            <p id="confirm-message"></p>
+            <div class="dialog-actions">
+                <button type="submit" class="btn btn-ghost" value="cancel">Annuler</button>
+                <button type="submit" class="btn btn-danger" value="confirm" id="confirm-ok">Confirmer</button>
+            </div>
+        </form>
+    </dialog>
+
+    <div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
 
     <script src="script.js"></script>
 </body>
-</html> 
+</html>

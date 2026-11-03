@@ -1,42 +1,38 @@
-# Gestionnaire de Tickets Restaurant
+# Mes Tickets Resto
 
-Une application web simple pour gérer vos tickets restaurant.
+Application web d'inventaire des titres-restaurant, pensée pour le ou la comptable d'une entreprise : saisie des lots de tickets, suivi des dates de validité, synthèse par période, journal des opérations et import/export CSV.
+
+Aucune dépendance, aucun build : HTML, CSS et JavaScript natifs.
 
 ## Fonctionnalités
 
-- Ajouter différents types de tickets restaurant avec leur nom, valeur et quantité
-- Calculer automatiquement la valeur totale des tickets
-- Éditer ou supprimer des tickets existants
-- Sauvegarder vos données localement (elles seront conservées même après avoir fermé le navigateur)
-
-## Comment utiliser l'application
-
-1. Ouvrez le fichier `index.html` dans votre navigateur web
-2. Pour ajouter un nouveau ticket:
-   - Entrez le nom du ticket (par exemple "Ticket Restaurant", "Chèque Déjeuner", etc.)
-   - Spécifiez la valeur unitaire du ticket en euros
-   - Indiquez la quantité de tickets de ce type que vous possédez
-   - Cliquez sur "Ajouter"
-3. Pour modifier un ticket existant, cliquez sur le bouton "Éditer" correspondant
-4. Pour supprimer un ticket, cliquez sur le bouton "Supprimer" correspondant
-
-## Résumé technique
-
-Cette application est construite avec:
-- HTML5 pour la structure
-- CSS3 pour le style
-- JavaScript pour l'interactivité et la logique
-
-Les données sont stockées dans le localStorage du navigateur, ce qui permet de conserver vos informations entre les sessions.
+- **Tableau de bord** : valeur des tickets valides (et montant expiré), nombre de tickets et valeur moyenne, montant qui expire dans les 60 jours, nombre d'émetteurs et de lots.
+- **Saisie d'un lot** : émetteur (avec autocomplétion), valeur faciale (raccourcis 8 € → 13 €), quantité, date d'émission et **référence** facultative (n° de facture, bon de commande…). Validation en ligne et aperçu du total. Un lot identique (même émetteur, valeur, date et référence) est fusionné.
+- **Dates de validité** : un titre-restaurant est utilisable pendant son année d'émission et jusqu'à fin février de l'année suivante. Les lots expirés sont signalés et ceux qui expirent bientôt sont mis en avant.
+- **Synthèse par période** (ce mois, mois dernier, cette année, tout, ou dates libres) : tableau par émetteur et valeur faciale avec sous-totaux et total, **exportable en CSV** et **imprimable** (mise en page dédiée à l'impression / PDF).
+- **Inventaire détaillé** : lots regroupés par émetteur, recherche par nom ou référence (raccourci `/`), tri, répartition de la valeur par émetteur, modification et suppression.
+- **Journal des opérations** : chaque ajout, modification, suppression ou import est horodaté avec son impact en euros (traçabilité).
+- **Annulation** de la dernière action depuis la notification.
+- **Import / export CSV** (séparateur `;`, virgule décimale : s'ouvre directement dans Excel en français).
+- **Thème clair / sombre** et couleur d'accent personnalisable.
+- Responsive (les tableaux passent en cartes sur mobile) et accessible (labels, navigation clavier, `prefers-reduced-motion`).
 
 ## Démarrage
 
-Pour utiliser cette application:
+Ouvrez simplement `index.html` dans un navigateur récent.
 
-1. Téléchargez tous les fichiers dans un même dossier:
-   - index.html
-   - styles.css
-   - script.js
-2. Ouvrez le fichier index.html dans votre navigateur préféré
+## Technique
 
-Aucune installation supplémentaire n'est requise, tout fonctionne directement dans le navigateur. 
+| Fichier | Rôle |
+| --- | --- |
+| `index.html` | Structure, sprite d'icônes SVG, dialogues natifs (`<dialog>`) |
+| `styles.css` | Design system en variables CSS (thèmes, accent via `color-mix`), grid, feuille d'impression |
+| `script.js` | État, logique métier, rendu et gestion des événements |
+
+Quelques choix :
+
+- **État centralisé** (`tickets`, `journal`) + une fonction `render()` : chaque mutation passe par `commit()` (sauvegarde puis rendu). `withUndo()` prend un instantané avant la mutation pour pouvoir l'annuler ; seule la dernière action est annulable, pour ne jamais écraser des opérations plus récentes.
+- **Sécurité** : tout texte saisi par l'utilisateur est échappé avant insertion dans le DOM (protection XSS).
+- **Montants** : regroupements faits en centimes entiers pour éviter les erreurs d'arrondi des nombres flottants.
+- **Dates** manipulées en heure locale (et non en UTC) pour éviter les décalages d'un jour.
+- Les données sont stockées dans le `localStorage` ; celles de l'ancienne version sont reprises automatiquement.
